@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "nutrilifebot-kdni",
+  "private_key_id": "3ab311e7da08be8643818eb225271a7826d88f29",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCq1DZs88Oo3Wr8\nnVoDQL0h2Pp0MfFs78DLc7QL+Y+QTKY0g2bai5ywpaxN6uX+LvQMXfjy6tioUeyI\nYL7R8yavkwc34ewe/dgm1EZxmYr0pnc1/skbAgqn+QoHaCiiRZmYTdSigiEZYuGm\nxQh69+cRHtO0/RNeTKTL4EsjgHDsNtyi4FmSHo2W4MbtuYggf3m8gr6UhOVSfLjZ\nGQOKFVIe50qHFT6fadbwJPvMiuv0A1pP/Ov9jbcxqiolp3KFf7ujqpfgcZzC6Y3n\nas0aYcWWSVJQ3+SJ+myhm82ngYnmtIXXau7x94qA0xXX79DmCflLtWqJ8N+wBJac\ngaAbGzP9AgMBAAECggEAI52whjkxdTLKxEXLN0vnUtgB6bli8DcxX0mtg2Sh67Ar\nY930kwKSJds4yBr+HidsbuqlxYG0r6067zkad7vl+CujkOFbwR9kEj5mPHeKetT9\nHEcVZzne/mPkFSTAegqgShqKB2Kxo3EUAljomni2loFymrS79chtgGswR0PXZ0v2\nczkpYBz0TIXmsdX89XchSikl6IelN5p0LmGpNpN/xS5I9ggfHVmuzxiTNFDzq5Q8\n1ksI53WcdnrS7IiyykUiDdRmS1mygmtDiNL2bqFX/zuMWqsnigtB3zBRkOwI7LXQ\nX78I+/OWcuTuRrKq1KkI5P4E5Rah/g6z3/RYgCKdOQKBgQDhlmKblF3Ies7JTVGB\n6jTB893wP7dzox6UlvITrnzWhvWTQmNCywoabwXmeaB93OHiGuDkQPIOZlGJg+ib\nGO3Qnhv0b5EBSbl2aWYtksJzf5cpN7GIysGC0q4w5cwUv3Gq6fmZY2PfeD+8cYeu\niMNJWfuWTV1NxXutAmryXyRndQKBgQDB2/fiD8oQhEBIVxN4HKtLslvbcpYrS4Wf\nLoi552UowUKUyxu8Eo/DKOIS/335VpXrEO22PI3L4A7OT+fWqUU7Pne+6rYNQgGO\nzeSi8oJR8Sh5ktKPFD577KYX5ubooYfUQHUoGrfzoBWJJ6l13jHA+EVdhnI1pNf8\n4ff7JVYRaQKBgQCVc2YcoGyJVyMMJhcrtJgDLqcIdY36JEUsN9xkwaKfFYY4azEL\nnSwyWv9Ts5xqBh34B8qaLZSviYXXTvaZWiijnzvx8r/kVI10L1usMaB1mD/y5JzP\nfVQ6cY1Jg9RyomqRyrS7tCcEc8v18ljrfluyitSsvNBlp8HJ2uIzdGjPyQKBgQCs\nbzLAe/bqVhivv/RrZGThgha+zd/RRu3mN4gahD6wz6afn0JeOcxydY0SBPxSqrfT\nTU2ESbx+2h+RV/YKNKqGFfyBb1jb1hh4o595aWiN5opwCS8NYZ5qsIbUv+goiHW/\nUE5li86P/5boVsUfOLLcyHk6xXoVSTltkLn5RK6X8QKBgGhj1+/eH+Hb91gz5Qhq\n5LeB2uIxgT6s/8m3yOEst/Oq4dC35Y8MOoJkzmqUj764NH3MJIywcYXx+rmOkMew\ncqogZNFgD1kKHzpqI+OX3pLMdbbGf3Bjeq5uKKApnV8qF1fBcAmtXI83BHYIU0PB\nWy2l4akJJmXIxzR2R8fW5Bh2\n-----END PRIVATE KEY-----\n",
+  "client_email": "asistente-nutrilife@nutrilifebot-kdni.iam.gserviceaccount.com",
+  "client_id": "100417868803792278038",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/asistente-nutrilife%40nutrilifebot-kdni.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
