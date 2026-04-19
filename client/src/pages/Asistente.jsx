@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const Asistente = () => {
   const [messages, setMessages] = useState([
-    { text: "¡Hola! Soy tu asistente de NutriLife. ¿En qué puedo ayudarte hoy?", sender: 'bot' }
+    { text: "¡Bienvenido a NutriLife! 🍏 Estoy listo para ayudarte a alcanzar tu meta. ¿Qué prefieres hacer hoy? Puedes pedirme tu dieta personalizada, ver tu rutina de ejercicios o actualizar tus datos para ver tu progreso. ¡Solo escribelo!", sender: 'bot' }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
