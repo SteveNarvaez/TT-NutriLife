@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Asistente from './Asistente'; 
+import MisGraficas from './MisGraficas';
+import PlanDiario from './PlanDiario';
 
 const Dashboard = () => {
   const [name, setName] = useState('');
@@ -22,11 +24,9 @@ const Dashboard = () => {
   };
 
   return (
-    // 1. CAMBIO CLAVE: h-screen y overflow-hidden evitan que la barra lateral se mueva
     <div className="h-screen w-screen bg-gray-50 flex overflow-hidden">
       
       {/* Sidebar - Lado Izquierdo */}
-      {/* Usamos h-full para que siempre ocupe el alto de la pantalla */}
       <aside className="w-64 bg-green-700 text-white hidden md:flex flex-col p-6 shadow-xl h-full flex-shrink-0">
         <h2 className="text-2xl font-bold mb-10">NutriLife 🍏</h2>
         
@@ -49,11 +49,21 @@ const Dashboard = () => {
             💬 Asistente IA
           </button>
 
-          <button className="flex items-center gap-3 w-full text-left font-medium p-2 rounded-lg hover:bg-green-600 transition">
+          <button 
+            onClick={() => setView('graficas')}
+            className={`flex items-center gap-3 w-full text-left font-medium p-2 rounded-lg transition ${
+              view === 'graficas' ? 'bg-green-800 shadow-inner' : 'hover:bg-green-600'
+            }`}
+          >
             📊 Mis Gráficas
           </button>
           
-          <button className="flex items-center gap-3 w-full text-left font-medium p-2 rounded-lg hover:bg-green-600 transition">
+         <button 
+            onClick={() => setView('plan')}
+            className={`flex items-center gap-3 w-full text-left font-medium p-2 rounded-lg transition ${
+              view === 'plan' ? 'bg-green-800 shadow-inner' : 'hover:bg-green-600'
+            }`}
+          >
             📅 Plan Diario
           </button>
         </nav>
@@ -67,11 +77,10 @@ const Dashboard = () => {
       </aside>
 
       {/* Contenido Principal - Lado Derecho */}
-      {/* flex-col y overflow-hidden para que el Asistente controle su propio scroll */}
       <main className="flex-1 flex flex-col h-full overflow-hidden bg-gray-50">
         
-        {view === 'inicio' ? (
-          /* Contenedor con scroll solo para la vista de inicio */
+        {/* 1️⃣ VISTA DE INICIO */}
+        {view === 'inicio' && (
           <div className="flex-1 overflow-y-auto p-8 animate-in fade-in duration-500">
             <header className="flex justify-between items-center mb-10">
               <div>
@@ -98,18 +107,30 @@ const Dashboard = () => {
                 <p className="text-2xl font-bold text-orange-600">Intermedio</p>
               </div>
             </div>
-            
-            <div className="mt-10 bg-white p-10 rounded-3xl border-2 border-dashed border-gray-200 text-center text-gray-400 h-64 flex items-center justify-center">
-              Gráficas de progreso (Próximamente con Chart.js)
-            </div>
           </div>
-        ) : (
-          /* Contenedor del Chat (Sin scroll extra para que el Asistente no se desplace) */
+        )}
+
+        {/* 2️⃣ VISTA DEL CHAT */}
+        {view === 'chat' && (
           <div className="flex-1 h-full p-4 md:p-8 overflow-hidden animate-in slide-in-from-bottom-4 duration-500">
             <Asistente />
           </div>
         )}
 
+        {/* 3️⃣ VISTA DE GRÁFICAS */}
+        {view === 'graficas' && (
+          <div className="flex-1 overflow-y-auto p-8 animate-in fade-in duration-500">
+             {/* Por ahora le pasamos el ID "1", después lo puedes vincular a tu login */}
+            <MisGraficas userId="1" />
+          </div>
+        )}
+        
+        {/* 4️⃣ VISTA DE PLAN DIARIO */}
+        {view === 'plan' && (
+          <div className="flex-1 overflow-y-auto p-4 md:p-8 animate-in fade-in duration-500">
+            <PlanDiario />
+          </div>
+        )}
       </main>
     </div>
   );

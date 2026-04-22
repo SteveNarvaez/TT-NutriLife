@@ -68,6 +68,7 @@ const manejarEvaluacion = async (req, res) => {
         const sessionParts = req.body.session.split('/');
         const id_usuario = sessionParts[sessionParts.length - 1];
 
+        // [MANTENEMOS EL BLOQUE DE EVALUACION INICIAL EXACTAMENTE IGUAL...]
         if (intentName.includes('evaluacion_inicial')) {
             const parametros = req.body.queryResult.parameters;
             const { edad, estatura, peso, objetivo, ejercicio, salud } = parametros;
@@ -118,7 +119,7 @@ const manejarEvaluacion = async (req, res) => {
             });
 
         } 
-// --- ✅ ESTE ES EL QUE TE FALTABA: BIENVENIDA PARA USUARIOS YA REGISTRADOS ---
+        // --- BIENVENIDA PARA USUARIOS YA REGISTRADOS ---
         else if (intentName.includes('usuario_reconocido')) {
             const infoQuery = await pool.query(
                 `SELECT tmb_calculado, objetivo_actual FROM historial_medidas WHERE id_usuario = $1 ORDER BY id_medida DESC LIMIT 1`, [id_usuario]
@@ -130,7 +131,7 @@ const manejarEvaluacion = async (req, res) => {
             }
             return res.json({ fulfillmentText: `${msg}\n\n¿Qué quieres hacer: ver tu **dieta**, tu **rutina** o **actualizar** tus medidas?` });
         }
-// 🟢 PUENTE PARA LA DIETA (VERSIÓN DEFINITIVA: AOA + CEREAL + FRESCOS)
+        // --- PUENTE PARA LA DIETA ---
         else if (intentName.includes('elegir_dieta')) {
             console.log(`🥗 Generando menú PRO para el ID ${id_usuario}`);
 
@@ -144,21 +145,17 @@ const manejarEvaluacion = async (req, res) => {
             }
 
             const caloriasMeta = userQuery.rows[0].tmb_calculado;
-            const objetivo = userQuery.rows[0].objetivo_actual;
 
             const comidaQuery = await pool.query(`SELECT * FROM catalogo_comida`);
             const alimentos = comidaQuery.rows;
 
-            // 🧠 LA MAGIA: Clasificación experta (Reconociendo AOA)
             const proteinas = alimentos.filter(a => a.grupo_nutricional.toUpperCase() === 'AOA' || a.grupo_nutricional.toLowerCase().includes('prote'));
             
-            // Filtramos cereales o usamos lo que no sea AOA ni fruta como respaldo
             let guarniciones = alimentos.filter(a => a.grupo_nutricional.toLowerCase().includes('cereal') || a.grupo_nutricional.toLowerCase().includes('leguminosa'));
             if (guarniciones.length === 0) guarniciones = alimentos.filter(a => a.grupo_nutricional.toUpperCase() !== 'AOA' && !a.grupo_nutricional.toLowerCase().includes('fruta'));
 
-            // Filtramos frutas/verduras
             let frescos = alimentos.filter(a => a.grupo_nutricional.toLowerCase().includes('fruta') || a.grupo_nutricional.toLowerCase().includes('verdura'));
-            if (frescos.length === 0) frescos = guarniciones; // Respaldo por si no hay frutas
+            if (frescos.length === 0) frescos = guarniciones; 
 
             if (proteinas.length === 0) {
                 return res.json({ fulfillmentText: "Necesito alimentos con el grupo 'AOA' en pgAdmin para armarte la dieta. ¡Revisa tu base!" });
@@ -166,21 +163,17 @@ const manejarEvaluacion = async (req, res) => {
 
             const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)];
 
-            // 3. Constructora de platos de 3 elementos
             const armarTiempoComida = (nombreTiempo, porcentajeCalorias) => {
                 const caloriasTiempo = Math.round(caloriasMeta * porcentajeCalorias);
 
-                // Elegimos 1 de cada canasta
                 let alimentoPro = getRandomItem(proteinas);
                 let alimentoCarb = getRandomItem(guarniciones);
                 let alimentoFresco = getRandomItem(frescos);
 
-                // División fitness: 40% calorías a proteína, 40% a guarnición pesada, 20% a fruta/verdura
                 let kcalPro = caloriasTiempo * 0.40;
                 let kcalCarb = caloriasTiempo * 0.40;
                 let kcalFresco = caloriasTiempo * 0.20;
 
-                // Regla de 3
                 let cantPro = ((kcalPro / alimentoPro.calorias_kcal) * alimentoPro.cantidad_base).toFixed(1);
                 let cantCarb = ((kcalCarb / alimentoCarb.calorias_kcal) * alimentoCarb.cantidad_base).toFixed(1);
                 let cantFresco = ((kcalFresco / alimentoFresco.calorias_kcal) * alimentoFresco.cantidad_base).toFixed(1);
@@ -197,13 +190,13 @@ const manejarEvaluacion = async (req, res) => {
             mensajeDieta += armarTiempoComida("🍲 Comida", 0.40);
             mensajeDieta += armarTiempoComida("🌙 Cena", 0.30);
 
-            mensajeDieta += `¿Qué te parece este combo? 💪 ¿Quieres registrarlo o pasamos a tu rutina de ejercicios?`;
+            // Preparando para la función de check-in que mencionaste
+            mensajeDieta += `¿Qué te parece este combo? 💪 Al final del día, cuéntame si lograste **respetar tu dieta** para registrarlo.`;
 
             return res.json({ fulfillmentText: mensajeDieta });
         }
-        // 🔵 PUENTE PARA LOS EJERCICIOS
+        // 🔵 PUENTE PARA LOS EJERCICIOS (¡Nivel arreglado!)
         else if (intentName.includes('elegir_ejercicio')) {
-            // 1. Obtener datos del usuario (Objetivo y Nivel)
             const userQuery = await pool.query(
                 `SELECT objetivo_actual, nivel_actividad FROM historial_medidas WHERE id_usuario = $1 ORDER BY id_medida DESC LIMIT 1`, 
                 [id_usuario]
@@ -211,12 +204,17 @@ const manejarEvaluacion = async (req, res) => {
 
             const { objetivo_actual, nivel_actividad } = userQuery.rows[0];
 
-            // 🧠 TU LÓGICA DE NIVELES:
+            // 🧠 LÓGICA DE NIVELES CORREGIDA:
             let cantidadEjercicios = 2; // Default principiante
-            if (nivel_actividad.toLowerCase().includes('intermedio')) cantidadEjercicios = 3;
-            if (nivel_actividad.toLowerCase().includes('avanzado')) cantidadEjercicios = 4;
+            const nivelLimpiado = nivel_actividad.toLowerCase();
+            
+            // Ahora acepta "intermedio" o "moderado" para dar 3 ejercicios
+            if (nivelLimpiado.includes('intermedio') || nivelLimpiado.includes('moderado')) {
+                cantidadEjercicios = 3;
+            } else if (nivelLimpiado.includes('avanzado') || nivelLimpiado.includes('intenso')) {
+                cantidadEjercicios = 4;
+            }
 
-            // 2. Buscamos en la DB con el LIMIT dinámico según su nivel
             const ejerciciosQuery = await pool.query(
                 `SELECT nombre, grupo_muscular, series_sugeridas, repeticiones_sugeridas, descripcion 
                  FROM cat_ejercicios 
@@ -225,8 +223,7 @@ const manejarEvaluacion = async (req, res) => {
                 [`%${objetivo_actual.split(' ')[0]}%`, cantidadEjercicios]
             );
 
-            // 3. Armamos el mensaje
-            let rutinaMsg = `¡Perfecto! Como eres **${nivel_actividad}**, he preparado una rutina de **${cantidadEjercicios} ejercicios** para tu meta de ${objetivo_actual}:\n\n`;
+            let rutinaMsg = `¡Perfecto! Como tu nivel es **${nivel_actividad}**, he preparado una rutina de **${cantidadEjercicios} ejercicios** para tu meta de ${objetivo_actual}:\n\n`;
 
             ejerciciosQuery.rows.forEach(ej => {
                 rutinaMsg += `💪 **${ej.nombre}** (${ej.grupo_muscular})\n`;
@@ -234,10 +231,113 @@ const manejarEvaluacion = async (req, res) => {
                 rutinaMsg += `   📝 ${ej.descripcion}\n\n`;
             });
 
+            // Preparando para la función de check-in que mencionaste
+            rutinaMsg += `A darle con todo. Avísame cuando la termines para registrar tu progreso. 🔥`;
+
             return res.json({ fulfillmentText: rutinaMsg });
+        }
+        
+        // 🟢 NUEVO: PUENTE PARA ACTUALIZAR MEDIDAS
+        else if (intentName.includes('actualizar_medidas')) {
+            return res.json({ 
+                fulfillmentText: "¡Claro que sí! Para mantener tus gráficas precisas, dime: ¿Cuál es tu **peso actual** en kilos?" 
+            });
         }
 
         // 🟡 SI NO RECONOCE NADA
+// 💾 NUEVO: ATRAPAR EL NÚMERO Y GUARDARLO PARA LAS GRÁFICAS
+        else if (intentName.includes('guardar_peso')) {
+            const parametros = req.body.queryResult.parameters;
+            
+            // Dialogflow a veces guarda el número como "number" o "numero" o "peso". Lo atrapamos:
+            const nuevoPeso = parametros.number || parametros.numero || parametros.peso; 
+
+            if (!nuevoPeso) {
+                return res.json({ fulfillmentText: "No logré captar el número. ¿Podrías repetirme solo tu peso en kilos? (Ejemplo: 89)" });
+            }
+
+            // 1. Buscamos sus últimos datos para no perder su altura ni sus metas
+            const userQuery = await pool.query(
+                `SELECT altura_cm, nivel_actividad, tmb_calculado, objetivo_actual 
+                 FROM historial_medidas 
+                 WHERE id_usuario = $1 ORDER BY id_medida DESC LIMIT 1`, 
+                [id_usuario]
+            );
+
+            if (userQuery.rows.length > 0) {
+                const { altura_cm, nivel_actividad, tmb_calculado, objetivo_actual } = userQuery.rows[0];
+
+                // 2. INSERTAMOS un nuevo registro (Esto crea el historial para que la gráfica suba o baje)
+                await pool.query(
+                    `INSERT INTO historial_medidas (id_usuario, peso_kg, altura_cm, nivel_actividad, tmb_calculado, objetivo_actual) 
+                     VALUES ($1, $2, $3, $4, $5, $6)`,
+                    [id_usuario, nuevoPeso, altura_cm, nivel_actividad, tmb_calculado, objetivo_actual]
+                );
+
+                console.log(`📊 Nuevo peso registrado para ID ${id_usuario}: ${nuevoPeso}kg`);
+
+                return res.json({ 
+                    fulfillmentText: `¡Listo! He registrado tu nuevo peso de **${nuevoPeso} kg**. 📈 Tus gráficas se han actualizado exitosamente.\n\n¿Quieres que te muestre tu **dieta** ajustada o tu **rutina** de hoy?` 
+                });
+            } else {
+                return res.json({ fulfillmentText: "Hubo un problema buscando tu perfil. Escribe 'inicio' para volver a empezar." });
+            }
+        }
+// 👤 NUEVO: PUENTE PARA VER EL PERFIL DEL USUARIO
+        else if (intentName.includes('ver_perfil')) {
+            const userQuery = await pool.query(
+                `SELECT peso_kg, altura_cm, nivel_actividad, tmb_calculado, objetivo_actual 
+                 FROM historial_medidas 
+                 WHERE id_usuario = $1 ORDER BY id_medida DESC LIMIT 1`, 
+                [id_usuario]
+            );
+
+            if (userQuery.rows.length > 0) {
+                const { peso_kg, altura_cm, nivel_actividad, tmb_calculado, objetivo_actual } = userQuery.rows[0];
+                
+                let perfilMsg = `📋 **Tu Perfil NutriLife** 🍏\n\n`;
+                perfilMsg += `⚖️ **Peso actual:** ${peso_kg} kg\n`;
+                perfilMsg += `📏 **Estatura:** ${altura_cm} cm\n`;
+                perfilMsg += `🏃 **Nivel:** ${nivel_actividad}\n`;
+                perfilMsg += `🎯 **Objetivo:** ${objetivo_actual}\n`;
+                perfilMsg += `🔥 **Meta Diaria:** ${tmb_calculado} kcal\n\n`;
+                perfilMsg += `¿Qué te gustaría hacer ahora? Puedes pedir tu **dieta**, tu **rutina** o **actualizar tu peso**.`;
+
+                return res.json({ fulfillmentText: perfilMsg });
+            } else {
+                return res.json({ fulfillmentText: "Aún no tengo un historial tuyo registrado. Escribe 'inicio' para hacer tu evaluación." });
+            }
+        }
+        // 🏆 NUEVO: REGISTRO DE ENTRENAMIENTO (CHECK-IN)
+        else if (intentName.includes('registrar_entrenamiento')) {
+            // 1. Guardamos el check-in con la fecha de hoy automáticamente
+            await pool.query(
+                `INSERT INTO progreso_rutinas (id_usuario) VALUES ($1)`,
+                [id_usuario]
+            );
+
+            // 2. Contamos cuántos días ha entrenado en total para motivarlo
+            const conteoQuery = await pool.query(
+                `SELECT COUNT(*) as total_entrenamientos FROM progreso_rutinas WHERE id_usuario = $1`,
+                [id_usuario]
+            );
+
+            const total = conteoQuery.rows[0].total_entrenamientos;
+
+            // 3. Armamos el mensaje de recompensa
+            let premioMsg = `¡Felicidades! 🎉 He registrado tu entrenamiento de hoy.\n\n`;
+            
+            if (total === 1) {
+                premioMsg += `🔥 Este es tu **primer entrenamiento** registrado. ¡El comienzo de un gran cambio!\n\n`;
+            } else {
+                premioMsg += `🔥 Llevas un total de **${total} entrenamientos** completados. ¡Tu constancia está rindiendo frutos!\n\n`;
+            }
+
+            premioMsg += `Descansa bien, hidrátate y no olvides tu dieta. ¡Nos vemos en tu próximo entrenamiento!`;
+
+            return res.json({ fulfillmentText: premioMsg });
+        }
+        // 🟡 SI NO RECONOCE NADA (¡ESTE SIEMPRE VA AL FINAL!)
         return res.json({ 
             fulfillmentText: `Webhook activo pero intent desconocido. El intent fue: "${intentName}"` 
         });
