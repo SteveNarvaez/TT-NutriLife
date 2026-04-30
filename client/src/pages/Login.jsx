@@ -8,35 +8,28 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault();
-    try {
-      // 1. CAMBIO: Mandamos { email, password } directamente. 
-      // 'credentials' no estaba definido en tu código.
-      // 2. CAMBIO: Usamos la URL completa del servidor (puerto 3000)
-      const response = await axios.post('http://localhost:3000/api/auth/login', { 
-        email, 
-        password 
-      });
+      e.preventDefault();
+      try {
+        const response = await axios.post('http://localhost:3000/api/auth/login', { 
+          email, 
+          password 
+        });
 
-      // 3. CAMBIO: Usamos 'response.data' consistentemente. 
-      // Tenías 'res' en algunas líneas, pero la variable se llama 'response'.
-      alert(response.data.message);
-      
-      // 4. GUARDADO DINÁMICO: Guardamos el ID que manda el backend
-      // El backend manda: { userId: ... , user: { id: ... } }
-      localStorage.setItem('userId', response.data.userId);
-      localStorage.setItem('userName', response.data.user.nombre);
-      
-      console.log("✅ Login exitoso. ID guardado:", response.data.userId);
-      
-      navigate('/dashboard'); 
+        alert(response.data.message);
+        
+        // GUARDADO DINÁMICO (Limpio y sin errores)
+        localStorage.setItem('userId', response.data.userId);
+        localStorage.setItem('userName', response.data.user.nombre);
+        
+        console.log("✅ Login exitoso. ID guardado:", response.data.userId);
+        
+        navigate('/dashboard'); 
 
-    } catch (err) {
-      console.error("❌ Error capturado:", err.response?.data || err.message);
-      // Mostramos el error real que manda tu authController (ej: "Contraseña incorrecta")
-      alert(err.response?.data?.error || "Error al iniciar sesión");
-    }
-  };
+      } catch (err) {
+        console.error("❌ Error capturado:", err.response?.data || err.message);
+        alert(err.response?.data?.error || "Error al iniciar sesión");
+      }
+    };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">

@@ -135,8 +135,9 @@ const manejarEvaluacion = async (req, res) => {
         else if (intentName.includes('elegir_dieta')) {
             console.log(`🥗 Generando menú PRO para el ID ${id_usuario}`);
 
+            // 1. AÑADIMOS 'peso_kg' A LA CONSULTA
             const userQuery = await pool.query(
-                `SELECT tmb_calculado, objetivo_actual FROM historial_medidas WHERE id_usuario = $1 ORDER BY id_medida DESC LIMIT 1`,
+                `SELECT tmb_calculado, objetivo_actual, peso_kg FROM historial_medidas WHERE id_usuario = $1 ORDER BY id_medida DESC LIMIT 1`,
                 [id_usuario]
             );
 
@@ -144,8 +145,43 @@ const manejarEvaluacion = async (req, res) => {
                 return res.json({ fulfillmentText: "No encontré tu evaluación previa. Escribe 'evaluación' para empezar desde cero." });
             }
 
-            const caloriasMeta = userQuery.rows[0].tmb_calculado;
+            const { tmb_calculado, objetivo_actual, peso_kg } = userQuery.rows[0];
+            const caloriasMeta = Number(tmb_calculado);
+            const objLimpio = objetivo_actual.toLowerCase();
 
+            // 🧠 2. LÓGICA MAESTRA DE MACRONUTRIENTES
+            let protGramos, grasaGramos, carbGramos, tipoDieta;
+
+            if (objLimpio.includes('perder') || objLimpio.includes('definicion') || objLimpio.includes('grasa')) {
+                tipoDieta = "Definición (Pérdida de grasa) 🔥";
+                protGramos = peso_kg * 2.2; // Alta proteína
+                grasaGramos = peso_kg * 0.8; // Grasas bajas
+            } 
+            else if (objLimpio.includes('ganar') || objLimpio.includes('volumen') || objLimpio.includes('masa')) {
+                tipoDieta = "Volumen (Ganar masa) 📈";
+                protGramos = peso_kg * 2.0; // Proteína suficiente
+                grasaGramos = peso_kg * 1.0; // Grasas moderadas
+            } 
+            else {
+                tipoDieta = "Mantenimiento (Recomposición) ⚖️";
+                protGramos = peso_kg * 1.8; // Proteína media-alta
+                grasaGramos = peso_kg * 1.0; // Grasas moderadas
+            }
+
+            // Calculamos los carbohidratos con las calorías restantes
+            carbGramos = (caloriasMeta - (protGramos * 4) - (grasaGramos * 9)) / 4;
+
+            // Redondeamos los gramos
+            protGramos = Math.round(protGramos);
+            grasaGramos = Math.round(grasaGramos);
+            carbGramos = Math.round(carbGramos);
+
+            // Calculamos qué porcentaje de la dieta representa cada macro para repartirlo en las comidas
+            const pctProt = (protGramos * 4) / caloriasMeta;
+            const pctCarb = (carbGramos * 4) / caloriasMeta;
+            const pctGrasa = (grasaGramos * 9) / caloriasMeta;
+
+            // 3. OBTENEMOS LOS ALIMENTOS DE LA BASE DE DATOS
             const comidaQuery = await pool.query(`SELECT * FROM catalogo_comida`);
             const alimentos = comidaQuery.rows;
 
@@ -163,16 +199,18 @@ const manejarEvaluacion = async (req, res) => {
 
             const getRandomItem = (array) => array[Math.floor(Math.random() * array.length)];
 
-            const armarTiempoComida = (nombreTiempo, porcentajeCalorias) => {
-                const caloriasTiempo = Math.round(caloriasMeta * porcentajeCalorias);
+            // 4. GENERADOR DE COMIDAS (Ahora usando los porcentajes exactos del usuario)
+            const armarTiempoComida = (nombreTiempo, porcentajeTiempo) => {
+                const caloriasTiempo = Math.round(caloriasMeta * porcentajeTiempo);
 
                 let alimentoPro = getRandomItem(proteinas);
                 let alimentoCarb = getRandomItem(guarniciones);
                 let alimentoFresco = getRandomItem(frescos);
 
-                let kcalPro = caloriasTiempo * 0.40;
-                let kcalCarb = caloriasTiempo * 0.40;
-                let kcalFresco = caloriasTiempo * 0.20;
+                // Asignamos las calorías dinámicamente según la fase del usuario
+                let kcalPro = caloriasTiempo * pctProt;
+                let kcalCarb = caloriasTiempo * pctCarb;
+                let kcalFresco = caloriasTiempo * pctGrasa; // Usamos las kcal de grasa/restantes para frescos y complementos
 
                 let cantPro = ((kcalPro / alimentoPro.calorias_kcal) * alimentoPro.cantidad_base).toFixed(1);
                 let cantCarb = ((kcalCarb / alimentoCarb.calorias_kcal) * alimentoCarb.cantidad_base).toFixed(1);
@@ -181,16 +219,20 @@ const manejarEvaluacion = async (req, res) => {
                 return `**${nombreTiempo} (~${caloriasTiempo} kcal)**\n` +
                        `🥩 **Proteína:** ${alimentoPro.nombre} (${cantPro} ${alimentoPro.unidad_medida})\n` +
                        `🍚 **Guarnición:** ${alimentoCarb.nombre} (${cantCarb} ${alimentoCarb.unidad_medida})\n` +
-                       `🍏 **Fresco:** ${alimentoFresco.nombre} (${cantFresco} ${alimentoFresco.unidad_medida})\n\n`;
+                       `🍏 **Fresco/Complemento:** ${alimentoFresco.nombre} (${cantFresco} ${alimentoFresco.unidad_medida})\n\n`;
             };
 
-            let mensajeDieta = `¡Tienes toda la razón! Un cuerpo fitness se construye con buenas proteínas. Para tus **${caloriasMeta} kcal**, he armado un menú balanceado (Proteína + Guarnición + Fresco):\n\n`;
-
+            // 5. ARMAMOS EL MENSAJE FINAL
+            let mensajeDieta = `¡Menú listo! Según tu peso actual de **${peso_kg}kg**, estás en fase de **${tipoDieta}** con un límite de **${caloriasMeta} kcal**.\n\n`;
+            
+            mensajeDieta += `📊 **Tus Macros Diarios:**\n`;
+            mensajeDieta += `🥩 Proteína: ${protGramos}g | 🍚 Carbs: ${carbGramos}g | 🥑 Grasas: ${grasaGramos}g\n\n`;
+            
+            mensajeDieta += `Aquí tienes tu menú distribuido:\n\n`;
             mensajeDieta += armarTiempoComida("🌅 Desayuno", 0.30);
             mensajeDieta += armarTiempoComida("🍲 Comida", 0.40);
             mensajeDieta += armarTiempoComida("🌙 Cena", 0.30);
 
-            // Preparando para la función de check-in que mencionaste
             mensajeDieta += `¿Qué te parece este combo? 💪 Al final del día, cuéntame si lograste **respetar tu dieta** para registrarlo.`;
 
             return res.json({ fulfillmentText: mensajeDieta });

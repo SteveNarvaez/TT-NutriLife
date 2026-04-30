@@ -6,15 +6,18 @@ import PlanDiario from './PlanDiario';
 
 const Dashboard = () => {
   const [name, setName] = useState('');
-  const [view, setView] = useState('inicio'); 
+  const [view, setView] = useState('inicio');
+  const [userId, setUserId] = useState(null); 
   const navigate = useNavigate();
 
   useEffect(() => {
     const storedName = localStorage.getItem('userName');
+    const storedId = localStorage.getItem('userId');
     if (!storedName) {
       navigate('/login');
     } else {
       setName(storedName);
+      setUserId(storedId);
     }
   }, [navigate]);
 
@@ -117,18 +120,19 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* 3️⃣ VISTA DE GRÁFICAS */}
+       {/* 3️⃣ VISTA DE GRÁFICAS */}
         {view === 'graficas' && (
           <div className="flex-1 overflow-y-auto p-8 animate-in fade-in duration-500">
-             {/* Por ahora le pasamos el ID "1", después lo puedes vincular a tu login */}
-            <MisGraficas userId="1" />
+             {/* 🟢 AHORA ES DINÁMICO */}
+            <MisGraficas userId={userId} /> 
           </div>
         )}
-        
+
         {/* 4️⃣ VISTA DE PLAN DIARIO */}
         {view === 'plan' && (
           <div className="flex-1 overflow-y-auto p-4 md:p-8 animate-in fade-in duration-500">
-            <PlanDiario />
+             {/* 🟢 AHORA ES DINÁMICO */}
+            <PlanDiario userId={userId} />
           </div>
         )}
       </main>
